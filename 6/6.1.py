@@ -1,0 +1,61 @@
+import itertools
+import sys
+
+def binarySearch(a, x, lo=0, hi=None):
+    if hi is None:
+        hi = len(a)
+    while lo < hi:
+        mid = (lo+hi)//2
+        midval = a[mid]
+        if midval < x:
+            lo = mid+1
+        elif midval > x: 
+            hi = mid
+        else:
+            return mid
+    return -1
+
+def main():
+    vertexSet = set()
+    inputFile = list(map(lambda x: x.strip("\n").split(")"), open("input.txt").readlines()))
+    for elem in inputFile:
+        vertexSet.add(elem[0])
+        vertexSet.add(elem[1])
+
+    vertexList = sorted(vertexSet)
+
+    matrix = [[0]*len(vertexSet) for _ in range(len(vertexSet))]
+    matrix2 = [[0]*len(vertexSet) for _ in range(len(vertexSet))]
+
+    for elem in inputFile:
+        i1 = binarySearch(vertexList, elem[0])
+        i2 = binarySearch(vertexList, elem[1])
+        matrix[i2][i1] = 1
+        
+    for elem in inputFile:
+        i1 = binarySearch(vertexList, elem[0])
+        i2 = binarySearch(vertexList, elem[1])
+        matrix2[i1][i2] = 1
+
+    for i in range(len(matrix)):
+        if any(matrix[i]):
+            continue
+        else:
+            root = (vertexList[i], i, 0)
+
+    vertexStack = [root]
+    conn = 0
+    depth = 0
+
+    while len(vertexStack):
+        toSearch = vertexStack.pop(0)
+        for i in range(len(matrix2)):
+            if matrix2[toSearch[1]][i]==1:
+                vertexStack.append((vertexList[i], i, toSearch[2]+1))
+                conn += toSearch[2]+1
+
+    print(conn)
+
+
+if __name__ == "__main__":
+    main()
