@@ -13,34 +13,34 @@ class intMachine:
         else:
             self.__memory = memory
         self.__pos = startPos                   #Used to resume execution after pause
-        self.__instructionSet = dict()          #Dict of all instructions, with the natural language name
+        self.__instructionSet = dict()          #Dict of all instructions, indexed by opcode
         self.__inputQueue = deque()       #Queue for inputs
-        self.__opCodeMapper = dict()            #Dict of all instructions, indexed by opcode
+        self.__nameMapper = dict()            #Mapper from name to opcode, to allow to call instructions in natural language
 
-    def __init__(self, prototype):
+    def __init__(self, prototype: intMachine):
         self.__memory = prototype.getMemory()
         self.__pos = prototype.getPos()
         self.__inputQueue = copy.deepcopy(prototype.getQueue())
-        self.__opCodeMapper = copy.deepcopy(prototype.getOpCodeMapper())
+        self.__nameMapper = copy.deepcopy(prototype.getNameMapper())
 
     def addArithmeticInstruction(self, name, opcode, func, nOperands, hasOutput):
-        self.__instructionSet.update({name: {"function": func, "nOperands": nOperands, "type": "arithmetic", "hasOutput": hasOutput}})
-        self.__opCodeMapper.update({opcode: name})
+        self.__instructionSet.update({opcode: {"function": func, "nOperands": nOperands, "type": "arithmetic", "hasOutput": hasOutput}})
+        self.__nameMapper.update({name: opcode})
 
     def __execArithmeticInstruction(self, instruction, *operands):
         return reduce(instruction, operands)
     
     def addLogicInstruction(self, name, opcode, func, nOperands, hasOutput):
-        self.__instructionSet.update({name: {"function": func, "nOperands": nOperands, "type": "logic", "hasOutput": hasOutput}})
-        self.__opCodeMapper.update({opcode: name})
+        self.__instructionSet.update({opcode: {"function": func, "nOperands": nOperands, "type": "logic", "hasOutput": hasOutput}})
+        self.__nameMapper.update({name: opcode})
 
     def __execLogicInstruction(self, instruction, *operands):
         return instruction(*operands)
 
     def addBranchInstruction(self, name, opcode, func, nOperands, hasOutput):
         #nOperands includes the destination operand
-        self.__instructionSet.update({name: {"function": func, "nOperands": nOperands, "type": "branch", "hasOutput": hasOutput}})
-        self.__opCodeMapper.update({opcode: name})
+        self.__instructionSet.update({opcode: {"function": func, "nOperands": nOperands, "type": "branch", "hasOutput": hasOutput}})
+        self.__nameMapper.update({opcode: name})
 
     def __execBranchInstruction(self, instruction, destination, *operands):
         if instruction(*operands):
@@ -51,13 +51,13 @@ class intMachine:
     
     def addReadInstruction(self, opcode):
         self.__instructionSet.update({"read": {"function": None, "nOperands": 1, "type": "io", "hasOutput": True}})
-        self.__opCodeMapper.update({opcode: "read"})
+        self.__nameMapper.update({"read": opcode})
 
-    def execInstruction(self, name, *operands):
-        instruction = self.__instructionSet[name]['function']
-        nOperands = self.__instructionSet[name]['nOperands']
-        instructionType = self.__instructionSet[name]['type']
-        hasOutput = self.__instructionSet[name]['hasOutput']
+    def execInstruction(self, opcode, *operands):
+        instruction = self.__instructionSet[opcode]['function']
+        nOperands = self.__instructionSet[opcode]['nOperands']
+        instructionType = self.__instructionSet[opcode]['type']
+        hasOutput = self.__instructionSet[opcode]['hasOutput']
 
         if len(operands) > nOperands:
             raise Exception("Too many operands given")
@@ -71,11 +71,11 @@ class intMachine:
         elif instructionType == "branch":
             return self.__execBranchInstruction(instruction, operands[-1], *operands[:-1])
 
-    def opCodeTranslate(self, opcode):
-        if opcode in self.__opCodeMapper:
-            return self.__opCodeMapper[opcode]
+    def translateName(self, name):
+        if name in self.__nameMapper:
+            return self.__nameMapper[name]
         else:
-            raise Exception("No such opcode found")
+            raise Exception("No such instruction")
 
     def fullExecutionStart(self, startPos = 0):
         #Execution that tries to get from start to end, if the program tries to fetch an input from an empty queue, the program crashes
@@ -107,8 +107,8 @@ class intMachine:
     def getQueue(self):
         return self.__inputQueue
 
-    def getOpCodeMapper(self):
-        return self.__opCodeMapper
+    def getNameMapper(self):
+        return self.__nameMapper
 
     def printMemory(self, lineSize = 10, cellSize = 8):
         print("Printing memory")
