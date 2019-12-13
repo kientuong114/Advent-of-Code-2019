@@ -6,6 +6,8 @@ import copy
 from collections import deque
 from functools import reduce
 
+OPCODE_LENGTH = 2
+
 class intMachine:
     def __init__(self, memory: list, startPos = 0):
         if isinstance(memory, str):
@@ -17,11 +19,16 @@ class intMachine:
         self.__inputQueue = deque()       #Queue for inputs
         self.__nameMapper = dict()            #Mapper from name to opcode, to allow to call instructions in natural language
 
+    """
     def __init__(self, prototype: intMachine):
         self.__memory = prototype.getMemory()
         self.__pos = prototype.getPos()
         self.__inputQueue = copy.deepcopy(prototype.getQueue())
         self.__nameMapper = copy.deepcopy(prototype.getNameMapper())
+    """
+
+    def readMem(self, pos):
+        return self.__memory[pos]
 
     def addArithmeticInstruction(self, name, opcode, func, nOperands, hasOutput):
         self.__instructionSet.update({opcode: {"function": func, "nOperands": nOperands, "type": "arithmetic", "hasOutput": hasOutput}})
@@ -48,6 +55,9 @@ class intMachine:
         else:
             self.__pos += len(operands) + 2
         return
+    
+    def getNumOperands(self, opcode):
+        return self.__instructionSet[opcode]['nOperands']
     
     def addReadInstruction(self, opcode):
         self.__instructionSet.update({"read": {"function": None, "nOperands": 1, "type": "io", "hasOutput": True}})
@@ -80,8 +90,18 @@ class intMachine:
     def fullExecutionStart(self, startPos = 0):
         #Execution that tries to get from start to end, if the program tries to fetch an input from an empty queue, the program crashes
         pos = startPos
-        while readMem(pos) != 99:
-            instructionName = opCodeTranslate(readMem(pos))
+        while self.readMem(pos) != 99:
+            instructionName = opCodeTranslate(self.readMem(pos))
+
+    def asyncExecutionStart(self, startPos = 0):
+        pos = startPos
+        while self.readMem(pos) != 99:
+            nOperands = self.getNumOperands(self.readMem(pos))
+            modeList = list(map(lambda x: int(x), list(str(self.readMem(pos)[:OPCODE_LENGTH].zfill(nOperands)))))
+            print(modeList)
+            #operands = getOperands(nOperands, modeList)
+            #execInstruction(readMem(pos))
+            
 
 
     def addInput(self, val):
@@ -98,8 +118,10 @@ class intMachine:
             raise Exception("Trying to extract values from empty input queue")
         return self.__inputQueue.get()
 
-    def readMem(self, pos):
-        return self.__memory[pos]
+    def getOperands(self, nOperands, operandsMode):
+        return
+
+
 
     def getMemory(self):
         return list(self.__memory)
@@ -128,8 +150,9 @@ class intMachine:
         pp.pprint(self.__instructionSet)
 
 def main():
-    m1 = intMachine([1,2,3,4,5,6,7,8,9,10,11,12,2,23,4,5,6,23, 24, 25, 26])
-    m1.printMemory()
+    m1 = intMachine([1,2,3])
+    m1.addArithmeticInstruction("test", 1, lambda x, y: x+y, 2, True)
+    m1.asyncExecutionStart()
 
 if __name__ == "__main__":
     main()
